@@ -227,6 +227,12 @@ class BoTSORT(object):
 
         self.gmc = GMC(method=args.cmc_method, verbose=[args.name, args.ablation])
 
+    def save_state(self):
+        pass
+
+    def reload_state(self):
+        pass
+
     def update(self, output_results, img):
         # KF prediction at line 295
         self.frame_id += 1
