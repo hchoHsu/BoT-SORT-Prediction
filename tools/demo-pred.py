@@ -5,7 +5,7 @@ import os.path as osp
 import time
 import cv2
 import torch
-from copy import deepcopy
+import numpy as np
 
 from loguru import logger
 
@@ -15,7 +15,7 @@ from yolox.data.data_augment import preproc
 from yolox.exp import get_exp
 from yolox.utils import fuse_model, get_model_info, postprocess
 from yolox.utils.visualize import plot_tracking
-from tracker.bot_sort import BoTSORT
+from tracker.bot_sort import BoTSORT, STrack
 from tracker.tracking_utils.timer import Timer
 
 
@@ -172,8 +172,7 @@ def image_demo(predictor, vis_folder, current_time, args):
             # Run tracker
             # Refer to tracker/bot_sort.py line 230
             # We want the tracker to return multiple kalman filter future predictions
-            state = tracker.save_state()
-            online_targets = tracker.update(detections, img_info['raw_img'])
+            online_targets = tracker.update(detections, img_info['raw_img']) # list[STrack, STrack, STrack...]
 
             online_tlwhs = []
             online_ids = []
@@ -194,6 +193,49 @@ def image_demo(predictor, vis_folder, current_time, args):
             online_im = plot_tracking(
                 img_info['raw_img'], online_tlwhs, online_ids, frame_id=frame_id, fps=1. / timer.average_time
             )
+
+            # """The Following predictions"""
+            state = tracker.save_state()
+
+            for i in range(20):
+                new_detections = []
+                for t in online_targets:
+                    tlbr = STrack.tlwh_to_tlbr(t.tlwh)
+                    tid = t.track_id
+                    score = t.score
+                    det = [None] * 7
+                    det[:4] = tlbr
+                    det[4] = score
+                    det[5] = 1
+                    det[6] = tid
+                    new_detections.append(det) 
+
+                online_targets = tracker.update(np.array(new_detections), img_info['raw_img'])
+
+                online_tlwhs = []
+                online_ids = []
+                online_scores = []
+                for t in online_targets:
+                    tlwh = t.tlwh
+                    tid = t.track_id
+                    vertical = tlwh[2] / tlwh[3] > args.aspect_ratio_thresh
+                    if tlwh[2] * tlwh[3] > args.min_box_area and not vertical:
+                        online_tlwhs.append(tlwh)
+                        online_ids.append(tid)
+                        online_scores.append(t.score)
+                        # save results
+                        results.append(
+                            f"{frame_id},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
+                        )
+                timer.toc()
+                if i % 5 == 0:
+                    online_im = plot_tracking(
+                        online_im, online_tlwhs, online_ids, frame_id=frame_id, fps=1. / timer.average_time, putId=False
+                    )
+            
+            tracker.reload_state(state)
+            # """End predictions"""
+
         else:
             timer.toc()
             online_im = img_info['raw_img']

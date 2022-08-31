@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import copy
 
+def features_deepcopy (f):
+    return [cv2.KeyPoint(x = k.pt[0], y = k.pt[1], 
+            size = k.size, angle = k.angle, 
+            response = k.response, octave = k.octave, 
+            class_id = k.class_id) for k in f]
 
 class GMC:
     def __init__(self, method='orb', downscale=2, verbose=None):
@@ -84,7 +89,7 @@ class GMC:
         else:
             res.prevFrame = None
         if self.prevKeyPoints is not None:
-            res.prevKeyPoints = (x.copy() for x in self.prevKeyPoints)
+            res.prevKeyPoints = tuple(features_deepcopy(list(self.prevKeyPoints)))
         else:
             res.prevKeyPoints = None
         if self.prevDescriptors is not None:

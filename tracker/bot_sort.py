@@ -270,6 +270,8 @@ class BoTSORT(object):
 
     def update(self, output_results, img):
         # KF prediction at line 295
+        # output_results[0] = [bb0, bb1, bb2, bb3, scores]
+        # output_results[0] = [bb0, bb1, bb2, bb3, scores, classes]
         self.frame_id += 1
         activated_starcks = []
         refind_stracks = []
