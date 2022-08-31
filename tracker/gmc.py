@@ -57,6 +57,45 @@ class GMC:
 
         self.initializedFirstFrame = False
 
+    def view(self):
+        res = type(self)()
+        
+        res.method = self.method
+        res.downscale = self.downscale
+
+        if self.method == 'orb':
+            res.detector = cv2.FastFeatureDetector_create(20)
+            res.extractor = cv2.ORB_create()
+            res.matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
+
+        elif self.method == 'sift':
+            res.detector = cv2.SIFT_create(nOctaveLayers=3, contrastThreshold=0.02, edgeThreshold=20)
+            res.extractor = cv2.SIFT_create(nOctaveLayers=3, contrastThreshold=0.02, edgeThreshold=20)
+            res.matcher = cv2.BFMatcher(cv2.NORM_L2)
+
+        elif self.method == 'ecc':
+            res.warp_mode = self.warp_mode
+            res.criteria = self.criteria
+        elif self.method == 'file' or self.method == 'files':
+            res.gmcFile = copy.deepcopy(self.gmcFile)
+
+        if self.prevFrame is not None:
+            res.prevFrame = self.prevFrame.copy()
+        else:
+            res.prevFrame = None
+        if self.prevKeyPoints is not None:
+            res.prevKeyPoints = (x.copy() for x in self.prevKeyPoints)
+        else:
+            res.prevKeyPoints = None
+        if self.prevDescriptors is not None:
+            res.prevDescriptors = self.prevDescriptors.copy()
+        else:
+            res.prevDescriptors = None
+
+        res.initializedFirstFrame = self.initializedFirstFrame
+
+        return res
+
     def apply(self, raw_frame, detections=None):
         if self.method == 'orb' or self.method == 'sift':
             return self.applyFeaures(raw_frame, detections)

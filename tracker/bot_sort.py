@@ -2,6 +2,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import deque
+from copy import deepcopy
 
 from tracker import matching
 from tracker.gmc import GMC
@@ -228,10 +229,44 @@ class BoTSORT(object):
         self.gmc = GMC(method=args.cmc_method, verbose=[args.name, args.ablation])
 
     def save_state(self):
-        pass
+        if self.args.with_reid:
+            return [deepcopy(self.tracked_stracks), deepcopy(self.lost_stracks), deepcopy(self.removed_stracks), deepcopy(self.frame_id), deepcopy(self.args)
+                ,deepcopy(self.track_high_thresh), deepcopy(self.track_low_thresh), deepcopy(self.new_track_thresh), deepcopy(self.buffer_size),
+                deepcopy(self.max_time_lost),
+                deepcopy(self.kalman_filter), 
+                deepcopy(self.proximity_thresh), 
+                deepcopy(self.appearance_thresh), 
+                deepcopy(self.encoder), 
+                self.gmc.view()
+                ]
+        return [deepcopy(self.tracked_stracks), deepcopy(self.lost_stracks), deepcopy(self.removed_stracks), deepcopy(self.frame_id), deepcopy(self.args),
+                deepcopy(self.track_high_thresh), deepcopy(self.track_low_thresh), deepcopy(self.new_track_thresh), deepcopy(self.buffer_size),
+                deepcopy(self.max_time_lost),
+                deepcopy(self.kalman_filter), 
+                deepcopy(self.proximity_thresh), 
+                deepcopy(self.appearance_thresh),
+                self.gmc.view()
+                ]
 
-    def reload_state(self):
-        pass
+    def reload_state(self, state):
+        self.tracked_stracks = state[0]
+        self.lost_stracks = state[1]
+        self.removed_stracks = state[2]
+        self.frame_id = state[3]
+        self.args = state[4]
+        self.track_high_thresh = state[5]
+        self.track_low_thresh = state[6]
+        self.new_track_thresh = state[7]
+        self.buffer_size = state[8]
+        self.max_time_lost = state[9]
+        self.kalman_filter = state[10]
+        self.proximity_thresh = state[11]
+        self.appearance_thresh = state[12]
+        if self.args.with_reid:
+            self.encoder = state[13]
+            self.gmc = state[14]
+        else:
+            self.gmc = state[13]
 
     def update(self, output_results, img):
         # KF prediction at line 295

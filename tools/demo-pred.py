@@ -5,7 +5,7 @@ import os.path as osp
 import time
 import cv2
 import torch
-import copy
+from copy import deepcopy
 
 from loguru import logger
 
@@ -172,6 +172,7 @@ def image_demo(predictor, vis_folder, current_time, args):
             # Run tracker
             # Refer to tracker/bot_sort.py line 230
             # We want the tracker to return multiple kalman filter future predictions
+            state = tracker.save_state()
             online_targets = tracker.update(detections, img_info['raw_img'])
 
             online_tlwhs = []
